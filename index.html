@@ -238,13 +238,15 @@
         </div>
       </div>
     </div>
+    <!-- Load Supabase client first -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script>
       const SUPABASE_URL = "https://vurlqixzuboerkkgqagq.supabase.co";
       const SUPABASE_ANON_KEY =
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ1cmxxaXh6dWJvZXJra2dxYWdxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY0NjI3NzMsImV4cCI6MjA2MjAzODc3M30.vhMMfcOcjjk2MsYyojlO8kRCFHrkw8JsLWiTA_xJSQU";
-      const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     </script>
+    <!-- Then load your app.js -->
     <script src="app.js"></script>
   </body>
 </html>
