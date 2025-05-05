@@ -1,5 +1,7 @@
 # Molly's Tracker
 
+[![codecov](https://codecov.io/gh/richie305/richie305.github.io/branch/main/graph/badge.svg)](https://codecov.io/gh/richie305/richie305.github.io)
+
 A modern web application to track your dog's food and bathroom behavior, with persistent favorites and cloud storage. Built with HTML, CSS, JavaScript, and [Supabase](https://supabase.com/) as the backend database.
 
 ## Features
