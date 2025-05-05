@@ -69,38 +69,315 @@ let favorites = [];
 // Load from localStorage if you want persistence (optional)
 // favorites = JSON.parse(localStorage.getItem('favorites')) || favorites;
 
-// DOM Elements
-const foodForm = document.getElementById("food-form");
-const bathroomForm = document.getElementById("bathroom-form");
-const foodLogsContainer = document.getElementById("food-logs");
-const bathroomLogsContainer = document.getElementById("bathroom-logs");
-const timelineContainer = document.getElementById("timeline");
-const exportBtn = document.getElementById("export-btn");
-const foodTypesDatalist = document.getElementById("food-types");
-const editModal = document.getElementById("edit-modal");
-const editForm = document.getElementById("edit-form");
-const closeModal = document.querySelector(".close-modal");
-const deleteEntryBtn = document.getElementById("delete-entry");
-const importFileInput = document.getElementById("import-file");
-const foodLocationInput = document.getElementById("food-location");
-const foodUseLocationBtn = document.getElementById("food-use-location");
-const bathroomLocationInput = document.getElementById("bathroom-location");
-const bathroomUseLocationBtn = document.getElementById("bathroom-use-location");
-const editFavoritesBtn = document.getElementById("edit-favorites-btn");
-const favoritesModal = document.getElementById("favorites-modal");
-const closeFavoritesModal = document.getElementById("close-favorites-modal");
-const favoritesForm = document.getElementById("favorites-form");
-const favoritesFields = document.getElementById("favorites-fields");
+// Only initialize DOM-dependent code if we're in a browser environment and not in a test environment
+if (
+  typeof window !== "undefined" &&
+  !window.isTestEnvironment &&
+  document.readyState !== "loading"
+) {
+  initializeDOMHandlers();
+} else if (typeof window !== "undefined" && !window.isTestEnvironment) {
+  document.addEventListener("DOMContentLoaded", initializeDOMHandlers);
+}
+
+// Move all DOM initialization into a single function
+function initializeDOMHandlers() {
+  // Initialize DOM elements
+  const foodForm = document.getElementById("food-form");
+  if (!foodForm) return; // Guard clause for test environment
+
+  const bathroomForm = document.getElementById("bathroom-form");
+  const foodLogsContainer = document.getElementById("food-logs");
+  const bathroomLogsContainer = document.getElementById("bathroom-logs");
+  const timelineContainer = document.getElementById("timeline");
+  const exportBtn = document.getElementById("export-btn");
+  const foodTypesDatalist = document.getElementById("food-types");
+  const editModal = document.getElementById("edit-modal");
+  const editForm = document.getElementById("edit-form");
+  const closeModal = document.querySelector(".close-modal");
+  const deleteEntryBtn = document.getElementById("delete-entry");
+  const importFileInput = document.getElementById("import-file");
+  const foodLocationInput = document.getElementById("food-location");
+  const foodUseLocationBtn = document.getElementById("food-use-location");
+  const bathroomLocationInput = document.getElementById("bathroom-location");
+  const bathroomUseLocationBtn = document.getElementById(
+    "bathroom-use-location",
+  );
+  const editFavoritesBtn = document.getElementById("edit-favorites-btn");
+  const favoritesModal = document.getElementById("favorites-modal");
+  const closeFavoritesModal = document.getElementById("close-favorites-modal");
+  const favoritesForm = document.getElementById("favorites-form");
+  const favoritesFields = document.getElementById("favorites-fields");
+
+  // Close modal when clicking the X
+  closeModal.addEventListener("click", () => {
+    editModal.style.display = "none";
+  });
+
+  // Close modal when clicking outside
+  window.addEventListener("click", (e) => {
+    if (e.target === editModal) {
+      editModal.style.display = "none";
+    }
+  });
+
+  // Handle edit form submission
+  editForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const id = document.getElementById("edit-id").value;
+    const type = document.getElementById("edit-type").value;
+
+    if (type === "food") {
+      const foodType = document.getElementById("edit-food-type").value;
+      const quantity = document.getElementById("edit-food-quantity").value;
+      const stolen = document.getElementById("edit-food-stolen").checked;
+      const location = document.getElementById("edit-food-location").value;
+
+      await updateFoodLog(id, {
+        type: foodType,
+        quantity: quantity,
+        stolen: stolen,
+        location: location,
+      });
+      foodLogs = await fetchFoodLogs();
+    } else {
+      const location = document.getElementById("edit-bathroom-location").value;
+      const formData = new FormData(editForm);
+      await updateBathroomLog(id, {
+        location: location,
+        type: formData.get("edit-type"),
+        size: formData.get("edit-size"),
+        consistency: formData.get("edit-consistency"),
+      });
+      bathroomLogs = await fetchBathroomLogs();
+    }
+
+    editModal.style.display = "none";
+    updateLogsDisplay();
+  });
+
+  // Handle delete entry
+  deleteEntryBtn.addEventListener("click", async () => {
+    const id = document.getElementById("edit-id").value;
+    const type = document.getElementById("edit-type").value;
+
+    if (type === "food") {
+      await deleteFoodLog(id);
+      foodLogs = await fetchFoodLogs();
+    } else {
+      await deleteBathroomLog(id);
+      bathroomLogs = await fetchBathroomLogs();
+    }
+
+    editModal.style.display = "none";
+    updateLogsDisplay();
+  });
+
+  // Handle food form submission
+  foodForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const foodType = document.getElementById("food-type").value;
+    const quantity = document.getElementById("food-quantity").value;
+    const stolen = document.getElementById("food-stolen").checked;
+    const location = foodLocationInput.value;
+
+    const log = {
+      type: foodType,
+      quantity: quantity,
+      stolen: stolen,
+      location: location,
+      timestamp: Date.now(),
+    };
+
+    await addFoodLog(log);
+    foodLogs = await fetchFoodLogs();
+    updateLogsDisplay();
+    foodForm.reset();
+  });
+
+  // Handle bathroom form submission
+  bathroomForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(bathroomForm);
+    const location = bathroomLocationInput.value;
+
+    const log = {
+      location: location,
+      type: formData.get("type"),
+      size: formData.get("size"),
+      consistency: formData.get("consistency"),
+      timestamp: Date.now(),
+    };
+
+    await addBathroomLog(log);
+    bathroomLogs = await fetchBathroomLogs();
+    updateLogsDisplay();
+    bathroomForm.reset();
+  });
+
+  // Handle export
+  exportBtn.addEventListener("click", () => {
+    const format = document.getElementById("export-format").value;
+    const allLogs = [
+      ...foodLogs.map((log) => ({
+        type: "Food",
+        details: `${log.type} - ${log.quantity}`,
+        timestamp: formatTimestamp(log.timestamp),
+        rawData: log,
+      })),
+      ...bathroomLogs.map((log) => ({
+        type: "Bathroom",
+        details: `${log.type} - ${log.location} - ${log.size} - ${log.consistency}`,
+        timestamp: formatTimestamp(log.timestamp),
+        rawData: log,
+      })),
+    ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    let content, mimeType, extension;
+
+    if (format === "csv") {
+      content = [
+        ["Type", "Details", "Timestamp"],
+        ...allLogs.map((log) => [log.type, log.details, log.timestamp]),
+      ]
+        .map((row) => row.join(","))
+        .join("\n");
+      mimeType = "text/csv;charset=utf-8;";
+      extension = "csv";
+    } else {
+      content = JSON.stringify(
+        {
+          foodLogs: foodLogs,
+          bathroomLogs: bathroomLogs,
+          exportDate: new Date().toISOString(),
+        },
+        null,
+        2,
+      );
+      mimeType = "application/json";
+      extension = "json";
+    }
+
+    const blob = new Blob([content], { type: mimeType });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `molly-logs-${new Date().toISOString().split("T")[0]}.${extension}`;
+    link.click();
+  });
+
+  // Handle import
+  importFileInput.addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async function (event) {
+      try {
+        let importedData;
+        if (file.name.endsWith(".json")) {
+          importedData = JSON.parse(event.target.result);
+          if (importedData.foodLogs && importedData.bathroomLogs) {
+            // Clear and re-insert logs
+            for (const log of importedData.foodLogs) await addFoodLog(log);
+            for (const log of importedData.bathroomLogs)
+              await addBathroomLog(log);
+            foodLogs = await fetchFoodLogs();
+            bathroomLogs = await fetchBathroomLogs();
+          } else {
+            alert("Invalid JSON format.");
+            return;
+          }
+        } else {
+          alert("Only JSON import is supported with Supabase.");
+          return;
+        }
+        updateLogsDisplay();
+        alert("Logs imported successfully!");
+      } catch (err) {
+        alert("Failed to import logs: " + err.message);
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  // Handle location buttons
+  foodUseLocationBtn.addEventListener("click", () =>
+    getLocationAndFill(foodLocationInput),
+  );
+  bathroomUseLocationBtn.addEventListener("click", () =>
+    getLocationAndFill(bathroomLocationInput),
+  );
+
+  // Handle favorites
+  editFavoritesBtn.addEventListener("click", () => {
+    favoritesModal.style.display = "block";
+    renderFavoritesForm();
+  });
+
+  closeFavoritesModal.addEventListener("click", () => {
+    favoritesModal.style.display = "none";
+  });
+
+  document.getElementById("add-favorite-btn").addEventListener("click", () => {
+    const favoriteField = document.createElement("div");
+    favoriteField.className = "favorite-field";
+    favoriteField.innerHTML = `
+      <input type="text" placeholder="Favorite name" required>
+      <button type="button" class="btn btn-delete remove-favorite">
+        <i class="fas fa-trash"></i>
+      </button>
+    `;
+    favoritesFields.appendChild(favoriteField);
+  });
+
+  favoritesForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const inputs = favoritesFields.querySelectorAll("input[type='text']");
+    const newFavorites = Array.from(inputs).map((input) => ({
+      name: input.value.trim(),
+    }));
+
+    // Delete all existing favorites
+    for (const favorite of favorites) {
+      await deleteFavorite(favorite.id);
+    }
+
+    // Add new favorites
+    for (const favorite of newFavorites) {
+      if (favorite.name) {
+        await addFavorite(favorite);
+      }
+    }
+
+    await loadFavorites();
+    renderFavorites();
+    favoritesModal.style.display = "none";
+  });
+
+  // Add event delegation for remove favorite buttons
+  favoritesFields.addEventListener("click", (e) => {
+    if (e.target.closest(".remove-favorite")) {
+      e.target.closest(".favorite-field").remove();
+    }
+  });
+
+  // Initial display update
+  updateLogsDisplay();
+}
 
 // Initialize food types datalist
 function updateFoodTypesDatalist() {
+  const foodTypesDatalist = document.getElementById("food-types");
+  if (!foodTypesDatalist) return; // Guard clause for test environment
   const types = Array.from(new Set(foodLogs.map((log) => log.type)));
   savedFoodTypes = types;
   foodTypesDatalist.innerHTML = types
     .map((type) => `<option value="${type}">`)
     .join("");
 }
-updateFoodTypesDatalist();
 
 // Format timestamp
 function formatTimestamp(timestamp) {
@@ -135,6 +412,15 @@ function createLogEntry(log, type) {
 
 // Update logs display
 function updateLogsDisplay() {
+  if (typeof window === "undefined" || window.isTestEnvironment) return;
+
+  const foodLogsContainer = document.getElementById("food-logs");
+  const bathroomLogsContainer = document.getElementById("bathroom-logs");
+  const timelineContainer = document.getElementById("timeline");
+
+  if (!foodLogsContainer || !bathroomLogsContainer || !timelineContainer)
+    return;
+
   // Update food logs
   foodLogsContainer.innerHTML = "";
   foodLogs.forEach((log) => {
@@ -267,200 +553,6 @@ function openEditModal(id, type) {
   editModal.style.display = "block";
 }
 
-// Close modal when clicking the X
-closeModal.addEventListener("click", () => {
-  editModal.style.display = "none";
-});
-
-// Close modal when clicking outside
-window.addEventListener("click", (e) => {
-  if (e.target === editModal) {
-    editModal.style.display = "none";
-  }
-});
-
-// Handle edit form submission
-editForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  const id = document.getElementById("edit-id").value;
-  const type = document.getElementById("edit-type").value;
-
-  if (type === "food") {
-    const foodType = document.getElementById("edit-food-type").value;
-    const quantity = document.getElementById("edit-food-quantity").value;
-    const stolen = document.getElementById("edit-food-stolen").checked;
-    const location = document.getElementById("edit-food-location").value;
-
-    await updateFoodLog(id, {
-      type: foodType,
-      quantity: quantity,
-      stolen: stolen,
-      location: location,
-    });
-    foodLogs = await fetchFoodLogs();
-  } else {
-    const location = document.getElementById("edit-bathroom-location").value;
-    const formData = new FormData(editForm);
-    await updateBathroomLog(id, {
-      location: location,
-      type: formData.get("edit-type"),
-      size: formData.get("edit-size"),
-      consistency: formData.get("edit-consistency"),
-    });
-    bathroomLogs = await fetchBathroomLogs();
-  }
-
-  editModal.style.display = "none";
-  updateLogsDisplay();
-});
-
-// Handle delete entry
-deleteEntryBtn.addEventListener("click", async () => {
-  const id = document.getElementById("edit-id").value;
-  const type = document.getElementById("edit-type").value;
-
-  if (type === "food") {
-    await deleteFoodLog(id);
-    foodLogs = await fetchFoodLogs();
-  } else {
-    await deleteBathroomLog(id);
-    bathroomLogs = await fetchBathroomLogs();
-  }
-
-  editModal.style.display = "none";
-  updateLogsDisplay();
-});
-
-// Handle food form submission
-foodForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  const foodType = document.getElementById("food-type").value;
-  const quantity = document.getElementById("food-quantity").value;
-  const stolen = document.getElementById("food-stolen").checked;
-  const location = foodLocationInput.value;
-
-  const log = {
-    type: foodType,
-    quantity: quantity,
-    stolen: stolen,
-    location: location,
-    timestamp: Date.now(),
-  };
-
-  await addFoodLog(log);
-  foodLogs = await fetchFoodLogs();
-  updateLogsDisplay();
-  foodForm.reset();
-});
-
-// Handle bathroom form submission
-bathroomForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  const formData = new FormData(bathroomForm);
-  const location = bathroomLocationInput.value;
-
-  const log = {
-    location: location,
-    type: formData.get("type"),
-    size: formData.get("size"),
-    consistency: formData.get("consistency"),
-    timestamp: Date.now(),
-  };
-
-  await addBathroomLog(log);
-  bathroomLogs = await fetchBathroomLogs();
-  updateLogsDisplay();
-  bathroomForm.reset();
-});
-
-// Handle export
-exportBtn.addEventListener("click", () => {
-  const format = document.getElementById("export-format").value;
-  const allLogs = [
-    ...foodLogs.map((log) => ({
-      type: "Food",
-      details: `${log.type} - ${log.quantity}`,
-      timestamp: formatTimestamp(log.timestamp),
-      rawData: log,
-    })),
-    ...bathroomLogs.map((log) => ({
-      type: "Bathroom",
-      details: `${log.type} - ${log.location} - ${log.size} - ${log.consistency}`,
-      timestamp: formatTimestamp(log.timestamp),
-      rawData: log,
-    })),
-  ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-  let content, mimeType, extension;
-
-  if (format === "csv") {
-    content = [
-      ["Type", "Details", "Timestamp"],
-      ...allLogs.map((log) => [log.type, log.details, log.timestamp]),
-    ]
-      .map((row) => row.join(","))
-      .join("\n");
-    mimeType = "text/csv;charset=utf-8;";
-    extension = "csv";
-  } else {
-    content = JSON.stringify(
-      {
-        foodLogs: foodLogs,
-        bathroomLogs: bathroomLogs,
-        exportDate: new Date().toISOString(),
-      },
-      null,
-      2,
-    );
-    mimeType = "application/json";
-    extension = "json";
-  }
-
-  const blob = new Blob([content], { type: mimeType });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = `molly-logs-${new Date().toISOString().split("T")[0]}.${extension}`;
-  link.click();
-});
-
-// Handle import
-importFileInput.addEventListener("change", async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = async function (event) {
-    try {
-      let importedData;
-      if (file.name.endsWith(".json")) {
-        importedData = JSON.parse(event.target.result);
-        if (importedData.foodLogs && importedData.bathroomLogs) {
-          // Clear and re-insert logs
-          for (const log of importedData.foodLogs) await addFoodLog(log);
-          for (const log of importedData.bathroomLogs)
-            await addBathroomLog(log);
-          foodLogs = await fetchFoodLogs();
-          bathroomLogs = await fetchBathroomLogs();
-        } else {
-          alert("Invalid JSON format.");
-          return;
-        }
-      } else {
-        alert("Only JSON import is supported with Supabase.");
-        return;
-      }
-      updateLogsDisplay();
-      alert("Logs imported successfully!");
-    } catch (err) {
-      alert("Failed to import logs: " + err.message);
-    }
-  };
-  reader.readAsText(file);
-});
-
 function getLocationAndFill(input) {
   if (!navigator.geolocation) {
     alert("Geolocation is not supported by your browser.");
@@ -479,22 +571,14 @@ function getLocationAndFill(input) {
   );
 }
 
-foodUseLocationBtn.addEventListener("click", () =>
-  getLocationAndFill(foodLocationInput),
-);
-bathroomUseLocationBtn.addEventListener("click", () =>
-  getLocationAndFill(bathroomLocationInput),
-);
-
-// Initial display update
-updateLogsDisplay();
-
 // --- Initial load ---
 
 async function initializeLogs() {
   foodLogs = await fetchFoodLogs();
   bathroomLogs = await fetchBathroomLogs();
-  updateLogsDisplay();
+  if (typeof window !== "undefined" && !window.isTestEnvironment) {
+    updateLogsDisplay();
+  }
 }
 
 initializeLogs();
@@ -530,58 +614,6 @@ function renderFavorites() {
   });
 }
 
-editFavoritesBtn.addEventListener("click", () => {
-  favoritesModal.style.display = "block";
-  renderFavoritesForm();
-});
-
-closeFavoritesModal.addEventListener("click", () => {
-  favoritesModal.style.display = "none";
-});
-
-document.getElementById("add-favorite-btn").addEventListener("click", () => {
-  const favoriteField = document.createElement("div");
-  favoriteField.className = "favorite-field";
-  favoriteField.innerHTML = `
-    <input type="text" placeholder="Favorite name" required>
-    <button type="button" class="btn btn-delete remove-favorite">
-      <i class="fas fa-trash"></i>
-    </button>
-  `;
-  favoritesFields.appendChild(favoriteField);
-});
-
-favoritesForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const inputs = favoritesFields.querySelectorAll("input[type='text']");
-  const newFavorites = Array.from(inputs).map((input) => ({
-    name: input.value.trim(),
-  }));
-
-  // Delete all existing favorites
-  for (const favorite of favorites) {
-    await deleteFavorite(favorite.id);
-  }
-
-  // Add new favorites
-  for (const favorite of newFavorites) {
-    if (favorite.name) {
-      await addFavorite(favorite);
-    }
-  }
-
-  await loadFavorites();
-  renderFavorites();
-  favoritesModal.style.display = "none";
-});
-
-// Add event delegation for remove favorite buttons
-favoritesFields.addEventListener("click", (e) => {
-  if (e.target.closest(".remove-favorite")) {
-    e.target.closest(".favorite-field").remove();
-  }
-});
-
 function renderFavoritesForm() {
   favoritesFields.innerHTML = "";
   favorites.forEach((favorite) => {
@@ -601,3 +633,21 @@ function capitalize(str) {
   if (!str) return "";
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
+
+// Export functions for testing
+export {
+  fetchFoodLogs,
+  fetchBathroomLogs,
+  addFoodLog,
+  addBathroomLog,
+  updateFoodLog,
+  updateBathroomLog,
+  deleteFoodLog,
+  deleteBathroomLog,
+  fetchFavorites,
+  addFavorite,
+  updateFavorite,
+  deleteFavorite,
+  formatTimestamp,
+  capitalize,
+};
