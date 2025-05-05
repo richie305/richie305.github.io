@@ -16,6 +16,13 @@
   </head>
   <body>
     <div class="container">
+      <div class="favorites-section">
+        <h2><i class="fas fa-star"></i> Favorites</h2>
+        <div id="favorites-list"></div>
+        <button class="btn" id="edit-favorites-btn">
+          <i class="fas fa-edit"></i> Edit Favorites
+        </button>
+      </div>
       <header>
         <div class="profile-section">
           <div class="photo-container">
@@ -225,6 +232,7 @@
           <span class="close-modal">&times;</span>
           <h2>Edit Entry</h2>
           <form id="edit-form">
+            <input type="hidden" id="edit-id" />
             <input type="hidden" id="edit-timestamp" />
             <input type="hidden" id="edit-type" />
             <div id="edit-fields"></div>
@@ -233,6 +241,19 @@
               <button type="button" class="btn btn-delete" id="delete-entry">
                 Delete Entry
               </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div id="favorites-modal" class="modal">
+        <div class="modal-content">
+          <span class="close-modal" id="close-favorites-modal">&times;</span>
+          <h2>Edit Favorites</h2>
+          <form id="favorites-form">
+            <div id="favorites-fields"></div>
+            <div class="modal-buttons">
+              <button type="submit" class="btn">Save Favorites</button>
             </div>
           </form>
         </div>

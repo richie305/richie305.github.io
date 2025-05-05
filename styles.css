@@ -443,3 +443,37 @@ input[type="text"]:focus {
     padding: 1rem 1rem 1rem 2rem;
   }
 }
+
+.favorites-section {
+  background: #fff8f3;
+  border-radius: 12px;
+  padding: 1.5rem 1rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 8px rgba(181, 82, 57, 0.06);
+}
+
+#favorites-list {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.favorite-btn {
+  background: var(--secondary-color, #e2a47e);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.7rem 1.2rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.favorite-btn:hover {
+  background: var(--primary-color, #b55239);
+  color: #fff;
+}

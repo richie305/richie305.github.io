@@ -40,10 +40,34 @@ async function deleteBathroomLog(id) {
   await supabase.from("bathroom_logs").delete().eq("id", id);
 }
 
+async function fetchFavorites() {
+  const { data, error } = await supabase
+    .from("favorites")
+    .select("*")
+    .order("id", { ascending: true });
+  return data || [];
+}
+
+async function updateFavorite(id, fav) {
+  await supabase.from("favorites").update(fav).eq("id", id);
+}
+
+async function addFavorite(fav) {
+  await supabase.from("favorites").insert([fav]);
+}
+
+async function deleteFavorite(id) {
+  await supabase.from("favorites").delete().eq("id", id);
+}
+
 // --- App State ---
 let foodLogs = [];
 let bathroomLogs = [];
 let savedFoodTypes = [];
+let favorites = [];
+
+// Load from localStorage if you want persistence (optional)
+// favorites = JSON.parse(localStorage.getItem('favorites')) || favorites;
 
 // DOM Elements
 const foodForm = document.getElementById("food-form");
@@ -62,6 +86,11 @@ const foodLocationInput = document.getElementById("food-location");
 const foodUseLocationBtn = document.getElementById("food-use-location");
 const bathroomLocationInput = document.getElementById("bathroom-location");
 const bathroomUseLocationBtn = document.getElementById("bathroom-use-location");
+const editFavoritesBtn = document.getElementById("edit-favorites-btn");
+const favoritesModal = document.getElementById("favorites-modal");
+const closeFavoritesModal = document.getElementById("close-favorites-modal");
+const favoritesForm = document.getElementById("favorites-form");
+const favoritesFields = document.getElementById("favorites-fields");
 
 // Initialize food types datalist
 function updateFoodTypesDatalist() {
@@ -470,3 +499,95 @@ async function initializeLogs() {
 }
 
 initializeLogs();
+
+async function loadFavorites() {
+  favorites = await fetchFavorites();
+  renderFavorites();
+}
+
+function renderFavorites() {
+  const list = document.getElementById("favorites-list");
+  list.innerHTML = "";
+  favorites.forEach((fav, idx) => {
+    const btn = document.createElement("button");
+    btn.className = "favorite-btn";
+    btn.innerHTML = `<i class="fas fa-star"></i> ${fav.label}`;
+    btn.onclick = () => {
+      // Fill bathroom form with favorite config
+      document.querySelector(
+        `#bathroom-form input[name="type"][value="${fav.type}"]`,
+      ).checked = true;
+      document.querySelector(
+        `#bathroom-form input[name="location"][value="${fav.location}"]`,
+      ).checked = true;
+      document.querySelector(
+        `#bathroom-form input[name="size"][value="${fav.size}"]`,
+      ).checked = true;
+      document.querySelector(
+        `#bathroom-form input[name="consistency"][value="${fav.consistency}"]`,
+      ).checked = true;
+    };
+    list.appendChild(btn);
+  });
+}
+
+editFavoritesBtn.onclick = async () => {
+  favorites = await fetchFavorites(); // Always get latest
+  favoritesFields.innerHTML = "";
+  favorites.forEach((fav, idx) => {
+    favoritesFields.innerHTML += `
+      <div class="form-group">
+        <label>Label:</label>
+        <input type="text" name="label${idx}" value="${fav.label}" required>
+        <label>Type:</label>
+        <select name="type${idx}">
+          <option value="pee" ${fav.type === "pee" ? "selected" : ""}>Pee</option>
+          <option value="poop" ${fav.type === "poop" ? "selected" : ""}>Poop</option>
+        </select>
+        <label>Location:</label>
+        <select name="location${idx}">
+          <option value="outside" ${fav.location === "outside" ? "selected" : ""}>Outside</option>
+          <option value="inside" ${fav.location === "inside" ? "selected" : ""}>Inside</option>
+        </select>
+        <label>Size:</label>
+        <select name="size${idx}">
+          <option value="big" ${fav.size === "big" ? "selected" : ""}>Big</option>
+          <option value="small" ${fav.size === "small" ? "selected" : ""}>Small</option>
+        </select>
+        <label>Consistency:</label>
+        <select name="consistency${idx}">
+          <option value="normal" ${fav.consistency === "normal" ? "selected" : ""}>Normal</option>
+          <option value="soft" ${fav.consistency === "soft" ? "selected" : ""}>Soft</option>
+          <option value="sick" ${fav.consistency === "sick" ? "selected" : ""}>Sick</option>
+        </select>
+      </div>
+      <hr>
+    `;
+  });
+  favoritesModal.style.display = "block";
+};
+
+closeFavoritesModal.onclick = () => {
+  favoritesModal.style.display = "none";
+};
+
+favoritesForm.onsubmit = async (e) => {
+  e.preventDefault();
+  for (let i = 0; i < favorites.length; i++) {
+    const updated = {
+      label: favoritesForm[`label${i}`].value,
+      type: favoritesForm[`type${i}`].value,
+      location: favoritesForm[`location${i}`].value,
+      size: favoritesForm[`size${i}`].value,
+      consistency: favoritesForm[`consistency${i}`].value,
+    };
+    await updateFavorite(favorites[i].id, updated);
+  }
+  await loadFavorites();
+  favoritesModal.style.display = "none";
+};
+
+window.addEventListener("DOMContentLoaded", () => {
+  loadFavorites();
+  // ...other init code...
+});
