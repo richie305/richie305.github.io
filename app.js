@@ -530,75 +530,72 @@ function renderFavorites() {
   });
 }
 
-editFavoritesBtn.onclick = async () => {
-  favorites = await fetchFavorites(); // Always get latest
-  favoritesFields.innerHTML = "";
-  favorites.forEach((fav, idx) => {
-    favoritesFields.innerHTML += `
-      <div class="form-group">
-        <label>Label:</label>
-        <input type="text" name="label${idx}" value="${fav.label}" required>
-        <label>Type:</label>
-        <select name="type${idx}">
-          <option value="pee" ${fav.type === "pee" ? "selected" : ""}>Pee</option>
-          <option value="poop" ${fav.type === "poop" ? "selected" : ""}>Poop</option>
-        </select>
-        <label>Location:</label>
-        <select name="location${idx}">
-          <option value="outside" ${fav.location === "outside" ? "selected" : ""}>Outside</option>
-          <option value="inside" ${fav.location === "inside" ? "selected" : ""}>Inside</option>
-        </select>
-        <label>Size:</label>
-        <select name="size${idx}">
-          <option value="big" ${fav.size === "big" ? "selected" : ""}>Big</option>
-          <option value="small" ${fav.size === "small" ? "selected" : ""}>Small</option>
-        </select>
-        <label>Consistency:</label>
-        <select name="consistency${idx}">
-          <option value="normal" ${fav.consistency === "normal" ? "selected" : ""}>Normal</option>
-          <option value="soft" ${fav.consistency === "soft" ? "selected" : ""}>Soft</option>
-          <option value="sick" ${fav.consistency === "sick" ? "selected" : ""}>Sick</option>
-        </select>
-      </div>
-      <hr>
-    `;
-  });
+editFavoritesBtn.addEventListener("click", () => {
   favoritesModal.style.display = "block";
-};
-
-closeFavoritesModal.onclick = () => {
-  favoritesModal.style.display = "none";
-};
-
-favoritesForm.onsubmit = async (e) => {
-  e.preventDefault();
-  for (let i = 0; i < favorites.length; i++) {
-    const category = favoritesForm[`category${i}`].value;
-    const updated = {
-      label: favoritesForm[`label${i}`].value,
-      category,
-      type: category === "bathroom" ? favoritesForm[`type${i}`].value : null,
-      location:
-        category === "bathroom" ? favoritesForm[`location${i}`].value : null,
-      size: category === "bathroom" ? favoritesForm[`size${i}`].value : null,
-      consistency:
-        category === "bathroom" ? favoritesForm[`consistency${i}`].value : null,
-      food_type:
-        category === "food" ? favoritesForm[`food_type${i}`].value : null,
-      quantity:
-        category === "food" ? favoritesForm[`quantity${i}`].value : null,
-      stolen: category === "food" ? favoritesForm[`stolen${i}`].checked : false,
-    };
-    await updateFavorite(favorites[i].id, updated);
-  }
-  await loadFavorites();
-  favoritesModal.style.display = "none";
-};
-
-window.addEventListener("DOMContentLoaded", () => {
-  loadFavorites();
-  // ...other init code...
+  renderFavoritesForm();
 });
+
+closeFavoritesModal.addEventListener("click", () => {
+  favoritesModal.style.display = "none";
+});
+
+document.getElementById("add-favorite-btn").addEventListener("click", () => {
+  const favoriteField = document.createElement("div");
+  favoriteField.className = "favorite-field";
+  favoriteField.innerHTML = `
+    <input type="text" placeholder="Favorite name" required>
+    <button type="button" class="btn btn-delete remove-favorite">
+      <i class="fas fa-trash"></i>
+    </button>
+  `;
+  favoritesFields.appendChild(favoriteField);
+});
+
+favoritesForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const inputs = favoritesFields.querySelectorAll("input[type='text']");
+  const newFavorites = Array.from(inputs).map((input) => ({
+    name: input.value.trim(),
+  }));
+
+  // Delete all existing favorites
+  for (const favorite of favorites) {
+    await deleteFavorite(favorite.id);
+  }
+
+  // Add new favorites
+  for (const favorite of newFavorites) {
+    if (favorite.name) {
+      await addFavorite(favorite);
+    }
+  }
+
+  await loadFavorites();
+  renderFavorites();
+  favoritesModal.style.display = "none";
+});
+
+// Add event delegation for remove favorite buttons
+favoritesFields.addEventListener("click", (e) => {
+  if (e.target.closest(".remove-favorite")) {
+    e.target.closest(".favorite-field").remove();
+  }
+});
+
+function renderFavoritesForm() {
+  favoritesFields.innerHTML = "";
+  favorites.forEach((favorite) => {
+    const favoriteField = document.createElement("div");
+    favoriteField.className = "favorite-field";
+    favoriteField.innerHTML = `
+      <input type="text" value="${favorite.name}" required>
+      <button type="button" class="btn btn-delete remove-favorite">
+        <i class="fas fa-trash"></i>
+      </button>
+    `;
+    favoritesFields.appendChild(favoriteField);
+  });
+}
 
 function capitalize(str) {
   if (!str) return "";
