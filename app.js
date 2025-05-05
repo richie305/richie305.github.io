@@ -1,5 +1,15 @@
+/**
+ * @fileoverview Main application file for Molly's Tracker. Handles food and bathroom tracking,
+ * favorites management, and data persistence using Supabase.
+ */
+
 // --- Supabase Data Functions ---
 
+/**
+ * Fetches all food logs from Supabase, ordered by timestamp in descending order.
+ * @async
+ * @returns {Promise<Array>} Array of food log objects
+ */
 async function fetchFoodLogs() {
   const { data, error } = await supabase
     .from("food_logs")
@@ -8,6 +18,11 @@ async function fetchFoodLogs() {
   return data || [];
 }
 
+/**
+ * Fetches all bathroom logs from Supabase, ordered by timestamp in descending order.
+ * @async
+ * @returns {Promise<Array>} Array of bathroom log objects
+ */
 async function fetchBathroomLogs() {
   const { data, error } = await supabase
     .from("bathroom_logs")
@@ -16,48 +31,169 @@ async function fetchBathroomLogs() {
   return data || [];
 }
 
+/**
+ * Adds a new food log to Supabase.
+ * @async
+ * @param {Object} log - The food log object to add
+ * @param {string} log.type - Type of food
+ * @param {string} log.quantity - Quantity of food
+ * @param {boolean} log.stolen - Whether the food was stolen
+ * @param {string} [log.location] - Location where food was given
+ * @param {number} log.timestamp - Timestamp of the log
+ * @returns {Promise<void>}
+ */
 async function addFoodLog(log) {
   await supabase.from("food_logs").insert([log]);
 }
 
+/**
+ * Adds a new bathroom log to Supabase.
+ * @async
+ * @param {Object} log - The bathroom log object to add
+ * @param {string} log.type - Type of bathroom activity ('pee' or 'poop')
+ * @param {string} log.location - Location of activity ('inside' or 'outside')
+ * @param {string} log.size - Size of activity ('big' or 'small')
+ * @param {string} log.consistency - Consistency of activity ('normal', 'soft', or 'sick')
+ * @param {number} log.timestamp - Timestamp of the log
+ * @returns {Promise<void>}
+ */
 async function addBathroomLog(log) {
   await supabase.from("bathroom_logs").insert([log]);
 }
 
+/**
+ * Updates an existing food log in Supabase.
+ * @async
+ * @param {number} id - ID of the food log to update
+ * @param {Object} log - Updated food log object
+ * @returns {Promise<void>}
+ */
 async function updateFoodLog(id, log) {
   await supabase.from("food_logs").update(log).eq("id", id);
 }
 
+/**
+ * Updates an existing bathroom log in Supabase.
+ * @async
+ * @param {number} id - ID of the bathroom log to update
+ * @param {Object} log - Updated bathroom log object
+ * @returns {Promise<void>}
+ */
 async function updateBathroomLog(id, log) {
   await supabase.from("bathroom_logs").update(log).eq("id", id);
 }
 
+/**
+ * Deletes a food log from Supabase.
+ * @async
+ * @param {number} id - ID of the food log to delete
+ * @returns {Promise<void>}
+ */
 async function deleteFoodLog(id) {
   await supabase.from("food_logs").delete().eq("id", id);
 }
 
+/**
+ * Deletes a bathroom log from Supabase.
+ * @async
+ * @param {number} id - ID of the bathroom log to delete
+ * @returns {Promise<void>}
+ */
 async function deleteBathroomLog(id) {
   await supabase.from("bathroom_logs").delete().eq("id", id);
 }
 
+/**
+ * Fetches all favorites from Supabase.
+ * @async
+ * @returns {Promise<Array>} Array of favorite objects
+ */
 async function fetchFavorites() {
+  console.log("Fetching favorites...");
   const { data, error } = await supabase
     .from("favorites")
     .select("*")
     .order("id", { ascending: true });
+
+  if (error) {
+    console.error("Error fetching favorites:", error);
+    return [];
+  }
+
+  console.log("Favorites fetched successfully:", data);
   return data || [];
 }
 
+/**
+ * Updates an existing favorite in Supabase.
+ * @async
+ * @param {number} id - ID of the favorite to update
+ * @param {Object} fav - Updated favorite object
+ * @returns {Promise<Object>} Updated favorite data
+ * @throws {Error} If the update operation fails
+ */
 async function updateFavorite(id, fav) {
-  await supabase.from("favorites").update(fav).eq("id", id);
+  console.log("Updating favorite:", { id, favorite: fav });
+  const { data, error } = await supabase
+    .from("favorites")
+    .update(fav)
+    .eq("id", id);
+
+  if (error) {
+    console.error("Error updating favorite:", error);
+    throw error;
+  }
+
+  console.log("Favorite updated successfully:", data);
+  return data;
 }
 
+/**
+ * Adds a new favorite to Supabase.
+ * @async
+ * @param {Object} fav - The favorite object to add
+ * @param {string} fav.name - Name of the favorite
+ * @param {string} [fav.type] - Type of activity
+ * @param {string} [fav.location] - Location of activity
+ * @param {string} [fav.size] - Size of activity
+ * @param {string} [fav.consistency] - Consistency of activity
+ * @returns {Promise<Object>} Added favorite data
+ * @throws {Error} If the insert operation fails
+ */
 async function addFavorite(fav) {
-  await supabase.from("favorites").insert([fav]);
+  console.log("Adding new favorite:", fav);
+  const { data, error } = await supabase.from("favorites").insert([fav]);
+
+  if (error) {
+    console.error("Error adding favorite:", error);
+    throw error;
+  }
+
+  console.log("Favorite added successfully:", data);
+  return data;
 }
 
+/**
+ * Deletes a favorite from Supabase.
+ * @async
+ * @param {number} id - ID of the favorite to delete
+ * @returns {Promise<Object>} Deleted favorite data
+ * @throws {Error} If the delete operation fails
+ */
 async function deleteFavorite(id) {
-  await supabase.from("favorites").delete().eq("id", id);
+  console.log("Deleting favorite with id:", id);
+  const { data, error } = await supabase
+    .from("favorites")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    console.error("Error deleting favorite:", error);
+    throw error;
+  }
+
+  console.log("Favorite deleted successfully:", data);
+  return data;
 }
 
 // --- App State ---
@@ -313,15 +449,18 @@ function initializeDOMHandlers() {
 
   // Handle favorites
   editFavoritesBtn.addEventListener("click", () => {
+    console.log("Edit favorites button clicked");
     favoritesModal.style.display = "block";
     renderFavoritesForm();
   });
 
   closeFavoritesModal.addEventListener("click", () => {
+    console.log("Closing favorites modal");
     favoritesModal.style.display = "none";
   });
 
   document.getElementById("add-favorite-btn").addEventListener("click", () => {
+    console.log("Add favorite button clicked");
     const favoriteField = document.createElement("div");
     favoriteField.className = "favorite-field";
     favoriteField.innerHTML = `
@@ -335,31 +474,44 @@ function initializeDOMHandlers() {
 
   favoritesForm.addEventListener("submit", async (e) => {
     e.preventDefault();
+    console.log("Favorites form submitted");
+
     const inputs = favoritesFields.querySelectorAll("input[type='text']");
     const newFavorites = Array.from(inputs).map((input) => ({
       name: input.value.trim(),
     }));
 
-    // Delete all existing favorites
-    for (const favorite of favorites) {
-      await deleteFavorite(favorite.id);
-    }
+    console.log("New favorites to save:", newFavorites);
 
-    // Add new favorites
-    for (const favorite of newFavorites) {
-      if (favorite.name) {
-        await addFavorite(favorite);
+    try {
+      // Delete all existing favorites
+      console.log("Deleting existing favorites...");
+      for (const favorite of favorites) {
+        await deleteFavorite(favorite.id);
       }
-    }
 
-    await loadFavorites();
-    renderFavorites();
-    favoritesModal.style.display = "none";
+      // Add new favorites
+      console.log("Adding new favorites...");
+      for (const favorite of newFavorites) {
+        if (favorite.name) {
+          await addFavorite(favorite);
+        }
+      }
+
+      await loadFavorites();
+      renderFavorites();
+      favoritesModal.style.display = "none";
+      console.log("Favorites updated successfully");
+    } catch (error) {
+      console.error("Error updating favorites:", error);
+      alert("Failed to update favorites. Please try again.");
+    }
   });
 
   // Add event delegation for remove favorite buttons
   favoritesFields.addEventListener("click", (e) => {
     if (e.target.closest(".remove-favorite")) {
+      console.log("Remove favorite button clicked");
       e.target.closest(".favorite-field").remove();
     }
   });
@@ -573,6 +725,10 @@ function getLocationAndFill(input) {
 
 // --- Initial load ---
 
+/**
+ * Initializes the application by loading logs and setting up the UI.
+ * @async
+ */
 async function initializeLogs() {
   foodLogs = await fetchFoodLogs();
   bathroomLogs = await fetchBathroomLogs();
@@ -583,19 +739,42 @@ async function initializeLogs() {
 
 initializeLogs();
 
+/**
+ * Loads favorites from Supabase and renders them.
+ * @async
+ */
 async function loadFavorites() {
-  favorites = await fetchFavorites();
-  renderFavorites();
+  console.log("Loading favorites...");
+  try {
+    favorites = await fetchFavorites();
+    console.log("Favorites loaded:", favorites);
+    renderFavorites();
+  } catch (error) {
+    console.error("Error loading favorites:", error);
+  }
 }
 
+/**
+ * Renders the favorites list in the UI.
+ */
 function renderFavorites() {
+  console.log("Rendering favorites...");
   const list = document.getElementById("favorites-list");
+  if (!list) {
+    console.warn("Favorites list element not found");
+    return;
+  }
+
   list.innerHTML = "";
+  console.log("Rendering", favorites.length, "favorites");
+
   favorites.forEach((fav, idx) => {
+    console.log("Rendering favorite:", fav);
     const btn = document.createElement("button");
     btn.className = "favorite-btn";
     btn.innerHTML = `<i class="fas fa-star"></i> ${fav.label}`;
     btn.onclick = () => {
+      console.log("Favorite clicked:", fav);
       // Fill bathroom form with favorite config
       document.querySelector(
         `#bathroom-form input[name="type"][value="${fav.type}"]`,
@@ -614,9 +793,22 @@ function renderFavorites() {
   });
 }
 
+/**
+ * Renders the favorites form in the edit modal.
+ */
 function renderFavoritesForm() {
+  console.log("Rendering favorites form...");
+  const favoritesFields = document.getElementById("favorites-fields");
+  if (!favoritesFields) {
+    console.warn("Favorites fields element not found");
+    return;
+  }
+
   favoritesFields.innerHTML = "";
+  console.log("Rendering form for", favorites.length, "favorites");
+
   favorites.forEach((favorite) => {
+    console.log("Rendering form field for favorite:", favorite);
     const favoriteField = document.createElement("div");
     favoriteField.className = "favorite-field";
     favoriteField.innerHTML = `
@@ -629,6 +821,11 @@ function renderFavoritesForm() {
   });
 }
 
+/**
+ * Capitalizes the first letter of a string.
+ * @param {string} str - String to capitalize
+ * @returns {string} Capitalized string, or empty string if input is null/undefined
+ */
 function capitalize(str) {
   if (!str) return "";
   return str.charAt(0).toUpperCase() + str.slice(1);
