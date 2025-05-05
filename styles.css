@@ -143,19 +143,87 @@ input[type="text"]:focus {
   border-bottom: none;
 }
 
+.timeline-section {
+  background: #f9f5ee;
+  border-radius: 16px;
+  padding: 2rem 1rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 12px rgba(181, 82, 57, 0.06);
+}
+
 .timeline {
-  background: white;
-  border-radius: 10px;
-  padding: 2rem;
-  margin-top: 2rem;
+  position: relative;
+  padding-left: 32px;
+}
+
+.timeline::before {
+  content: "";
+  position: absolute;
+  left: 16px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--secondary-color, #e2a47e);
+  border-radius: 2px;
+  opacity: 0.3;
 }
 
 .timeline-entry {
-  padding: 1rem;
-  border-left: 3px solid var(--primary-color);
-  margin-bottom: 1rem;
-  background: #f8f9fa;
-  border-radius: 0 5px 5px 0;
+  position: relative;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(44, 62, 80, 0.04);
+  margin-bottom: 1.5rem;
+  padding: 1.25rem 1.5rem 1.25rem 2.5rem;
+  display: flex;
+  align-items: center;
+  transition: box-shadow 0.2s;
+  border-left: 6px solid var(--primary-color, #b55239);
+}
+
+.timeline-entry:last-child {
+  margin-bottom: 0;
+}
+
+.timeline-content {
+  flex: 1;
+}
+
+.timeline-content div:first-child {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--text-color, #4b2e1e);
+  margin-bottom: 0.25rem;
+}
+
+.timeline-content div:last-child {
+  font-size: 0.95rem;
+  color: #a58b6f;
+  font-weight: 400;
+}
+
+.btn-edit {
+  background: var(--primary-color, #b55239);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 1rem;
+  font-size: 1.2rem;
+  box-shadow: 0 2px 8px rgba(181, 82, 57, 0.1);
+  transition:
+    background 0.2s,
+    box-shadow 0.2s;
+}
+
+.btn-edit:hover {
+  background: var(--secondary-color, #e2a47e);
+  color: var(--primary-color, #b55239);
+  box-shadow: 0 4px 16px rgba(181, 82, 57, 0.18);
 }
 
 .export-section {
@@ -365,5 +433,13 @@ input[type="text"]:focus {
   .photo-container {
     width: 90px;
     height: 90px;
+  }
+
+  .timeline-section {
+    padding: 1rem 0.5rem;
+  }
+
+  .timeline-entry {
+    padding: 1rem 1rem 1rem 2rem;
   }
 }
