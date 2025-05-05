@@ -1,7 +1,9 @@
-// Initialize data storage
-let foodLogs = JSON.parse(localStorage.getItem("foodLogs")) || [];
-let bathroomLogs = JSON.parse(localStorage.getItem("bathroomLogs")) || [];
-let savedFoodTypes = JSON.parse(localStorage.getItem("savedFoodTypes")) || [];
+const API_URL =
+  "https://script.google.com/macros/s/AKfycby55o-G1pCblXlj6EJSns0eTqd3KEGAfSk2ou5dd9Mh-yGf49wfcATRv65UqVgxZ848/exec";
+
+let foodLogs = [];
+let bathroomLogs = [];
+let savedFoodTypes = [];
 
 // DOM Elements
 const foodForm = document.getElementById("food-form");
@@ -23,7 +25,10 @@ const bathroomUseLocationBtn = document.getElementById("bathroom-use-location");
 
 // Initialize food types datalist
 function updateFoodTypesDatalist() {
-  foodTypesDatalist.innerHTML = savedFoodTypes
+  // Rebuild datalist from foodLogs
+  const types = Array.from(new Set(foodLogs.map((log) => log.type)));
+  savedFoodTypes = types;
+  foodTypesDatalist.innerHTML = types
     .map((type) => `<option value="${type}">`)
     .join("");
 }
@@ -31,7 +36,7 @@ updateFoodTypesDatalist();
 
 // Format timestamp
 function formatTimestamp(timestamp) {
-  return new Date(timestamp).toLocaleString();
+  return new Date(Number(timestamp)).toLocaleString();
 }
 
 // Create log entry element
@@ -83,6 +88,7 @@ function updateLogsDisplay() {
 
   // Update timeline
   updateTimeline();
+  updateFoodTypesDatalist();
 }
 
 // Update timeline
@@ -160,15 +166,16 @@ function openEditModal(timestamp, type) {
                     Stolen Food
                 </label>
             </div>
+            <div class="form-group">
+                <label for="edit-food-location">Location:</label>
+                <input type="text" id="edit-food-location" value="${log.location || ""}">
+            </div>
         `;
   } else {
     editFields.innerHTML = `
             <div class="form-group">
                 <label>Location:</label>
-                <div class="radio-group">
-                    <label><input type="radio" name="edit-location" value="inside" ${log.location === "inside" ? "checked" : ""} required> Inside</label>
-                    <label><input type="radio" name="edit-location" value="outside" ${log.location === "outside" ? "checked" : ""} required> Outside</label>
-                </div>
+                <input type="text" id="edit-bathroom-location" value="${log.location || ""}">
             </div>
             <div class="form-group">
                 <label>Type:</label>
@@ -211,7 +218,7 @@ window.addEventListener("click", (e) => {
 });
 
 // Handle edit form submission
-editForm.addEventListener("submit", (e) => {
+editForm.addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const timestamp = parseInt(document.getElementById("edit-timestamp").value);
@@ -221,6 +228,7 @@ editForm.addEventListener("submit", (e) => {
     const foodType = document.getElementById("edit-food-type").value;
     const quantity = document.getElementById("edit-food-quantity").value;
     const stolen = document.getElementById("edit-food-stolen").checked;
+    const location = document.getElementById("edit-food-location").value;
 
     const index = foodLogs.findIndex((log) => log.timestamp === timestamp);
     if (index !== -1) {
@@ -228,14 +236,16 @@ editForm.addEventListener("submit", (e) => {
         type: foodType,
         quantity: quantity,
         stolen: stolen,
+        location: location,
         timestamp: timestamp,
       };
-      localStorage.setItem("foodLogs", JSON.stringify(foodLogs));
+      await saveLogs("FoodLogs", foodLogs);
     }
   } else {
+    const location = document.getElementById("edit-bathroom-location").value;
     const formData = new FormData(editForm);
     const bathroomLog = {
-      location: formData.get("edit-location"),
+      location: location,
       type: formData.get("edit-type"),
       size: formData.get("edit-size"),
       consistency: formData.get("edit-consistency"),
@@ -245,7 +255,7 @@ editForm.addEventListener("submit", (e) => {
     const index = bathroomLogs.findIndex((log) => log.timestamp === timestamp);
     if (index !== -1) {
       bathroomLogs[index] = bathroomLog;
-      localStorage.setItem("bathroomLogs", JSON.stringify(bathroomLogs));
+      await saveLogs("BathroomLogs", bathroomLogs);
     }
   }
 
@@ -254,16 +264,16 @@ editForm.addEventListener("submit", (e) => {
 });
 
 // Handle delete entry
-deleteEntryBtn.addEventListener("click", () => {
+deleteEntryBtn.addEventListener("click", async () => {
   const timestamp = parseInt(document.getElementById("edit-timestamp").value);
   const type = document.getElementById("edit-type").value;
 
   if (type === "food") {
     foodLogs = foodLogs.filter((log) => log.timestamp !== timestamp);
-    localStorage.setItem("foodLogs", JSON.stringify(foodLogs));
+    await saveLogs("FoodLogs", foodLogs);
   } else {
     bathroomLogs = bathroomLogs.filter((log) => log.timestamp !== timestamp);
-    localStorage.setItem("bathroomLogs", JSON.stringify(bathroomLogs));
+    await saveLogs("BathroomLogs", bathroomLogs);
   }
 
   editModal.style.display = "none";
@@ -271,7 +281,7 @@ deleteEntryBtn.addEventListener("click", () => {
 });
 
 // Handle food form submission
-foodForm.addEventListener("submit", (e) => {
+foodForm.addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const foodType = document.getElementById("food-type").value;
@@ -279,14 +289,6 @@ foodForm.addEventListener("submit", (e) => {
   const stolen = document.getElementById("food-stolen").checked;
   const location = foodLocationInput.value;
 
-  // Save new food type if it doesn't exist
-  if (!savedFoodTypes.includes(foodType)) {
-    savedFoodTypes.push(foodType);
-    localStorage.setItem("savedFoodTypes", JSON.stringify(savedFoodTypes));
-    updateFoodTypesDatalist();
-  }
-
-  // Add new food log
   foodLogs.push({
     type: foodType,
     quantity: quantity,
@@ -295,13 +297,13 @@ foodForm.addEventListener("submit", (e) => {
     timestamp: Date.now(),
   });
 
-  localStorage.setItem("foodLogs", JSON.stringify(foodLogs));
+  await saveLogs("FoodLogs", foodLogs);
   updateLogsDisplay();
   foodForm.reset();
 });
 
 // Handle bathroom form submission
-bathroomForm.addEventListener("submit", (e) => {
+bathroomForm.addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const formData = new FormData(bathroomForm);
@@ -315,7 +317,7 @@ bathroomForm.addEventListener("submit", (e) => {
   };
 
   bathroomLogs.push(bathroomLog);
-  localStorage.setItem("bathroomLogs", JSON.stringify(bathroomLogs));
+  await saveLogs("BathroomLogs", bathroomLogs);
   updateLogsDisplay();
   bathroomForm.reset();
 });
@@ -371,12 +373,12 @@ exportBtn.addEventListener("click", () => {
 });
 
 // Handle import
-importFileInput.addEventListener("change", (e) => {
+importFileInput.addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file) return;
 
   const reader = new FileReader();
-  reader.onload = function (event) {
+  reader.onload = async function (event) {
     try {
       let importedData;
       if (file.name.endsWith(".json")) {
@@ -419,6 +421,8 @@ importFileInput.addEventListener("change", (e) => {
         alert("Unsupported file type.");
         return;
       }
+      await saveLogs("FoodLogs", foodLogs);
+      await saveLogs("BathroomLogs", bathroomLogs);
       updateLogsDisplay();
       alert("Logs imported successfully!");
     } catch (err) {
@@ -455,3 +459,29 @@ bathroomUseLocationBtn.addEventListener("click", () =>
 
 // Initial display update
 updateLogsDisplay();
+
+// --- Google Sheets API functions ---
+
+async function fetchLogs(sheet) {
+  const res = await fetch(`${API_URL}?sheet=${sheet}`);
+  const data = await res.json();
+  return data.error ? [] : data;
+}
+
+async function saveLogs(sheet, logs) {
+  await fetch(`${API_URL}?sheet=${sheet}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(logs),
+  });
+}
+
+// --- Initial load ---
+
+async function initializeLogs() {
+  foodLogs = await fetchLogs("FoodLogs");
+  bathroomLogs = await fetchLogs("BathroomLogs");
+  updateLogsDisplay();
+}
+
+initializeLogs();
