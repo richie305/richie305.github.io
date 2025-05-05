@@ -1,5 +1,5 @@
 const API_URL =
-  "https://script.google.com/macros/s/AKfycby55o-G1pCblXlj6EJSns0eTqd3KEGAfSk2ou5dd9Mh-yGf49wfcATRv65UqVgxZ848/exec";
+  "https://script.google.com/macros/s/AKfycbyxomb3sqz17ZTyeot0A_iRWeQbe8pdZtsmWeAD5R98bwJjSf5lvsUqwUn57ca8zaWv/exec";
 
 let foodLogs = [];
 let bathroomLogs = [];
