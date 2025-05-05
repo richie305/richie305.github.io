@@ -1,6 +1,46 @@
-const API_URL =
-  "https://script.google.com/macros/s/AKfycbyxomb3sqz17ZTyeot0A_iRWeQbe8pdZtsmWeAD5R98bwJjSf5lvsUqwUn57ca8zaWv/exec";
+// --- Supabase Data Functions ---
 
+async function fetchFoodLogs() {
+  const { data, error } = await supabase
+    .from('food_logs')
+    .select('*')
+    .order('timestamp', { ascending: false });
+  return data || [];
+}
+
+async function fetchBathroomLogs() {
+  const { data, error } = await supabase
+    .from('bathroom_logs')
+    .select('*')
+    .order('timestamp', { ascending: false });
+  return data || [];
+}
+
+async function addFoodLog(log) {
+  await supabase.from('food_logs').insert([log]);
+}
+
+async function addBathroomLog(log) {
+  await supabase.from('bathroom_logs').insert([log]);
+}
+
+async function updateFoodLog(id, log) {
+  await supabase.from('food_logs').update(log).eq('id', id);
+}
+
+async function updateBathroomLog(id, log) {
+  await supabase.from('bathroom_logs').update(log).eq('id', id);
+}
+
+async function deleteFoodLog(id) {
+  await supabase.from('food_logs').delete().eq('id', id);
+}
+
+async function deleteBathroomLog(id) {
+  await supabase.from('bathroom_logs').delete().eq('id', id);
+}
+
+// --- App State ---
 let foodLogs = [];
 let bathroomLogs = [];
 let savedFoodTypes = [];
@@ -25,12 +65,9 @@ const bathroomUseLocationBtn = document.getElementById("bathroom-use-location");
 
 // Initialize food types datalist
 function updateFoodTypesDatalist() {
-  // Rebuild datalist from foodLogs
-  const types = Array.from(new Set(foodLogs.map((log) => log.type)));
+  const types = Array.from(new Set(foodLogs.map(log => log.type)));
   savedFoodTypes = types;
-  foodTypesDatalist.innerHTML = types
-    .map((type) => `<option value="${type}">`)
-    .join("");
+  foodTypesDatalist.innerHTML = types.map(type => `<option value="${type}">`).join('');
 }
 updateFoodTypesDatalist();
 
@@ -70,21 +107,15 @@ function createLogEntry(log, type) {
 function updateLogsDisplay() {
   // Update food logs
   foodLogsContainer.innerHTML = "";
-  foodLogs
-    .slice()
-    .reverse()
-    .forEach((log) => {
-      foodLogsContainer.appendChild(createLogEntry(log, "food"));
-    });
+  foodLogs.forEach(log => {
+    foodLogsContainer.appendChild(createLogEntry(log, "food"));
+  });
 
   // Update bathroom logs
   bathroomLogsContainer.innerHTML = "";
-  bathroomLogs
-    .slice()
-    .reverse()
-    .forEach((log) => {
-      bathroomLogsContainer.appendChild(createLogEntry(log, "bathroom"));
-    });
+  bathroomLogs.forEach(log => {
+    bathroomLogsContainer.appendChild(createLogEntry(log, "bathroom"));
+  });
 
   // Update timeline
   updateTimeline();
@@ -94,8 +125,8 @@ function updateLogsDisplay() {
 // Update timeline
 function updateTimeline() {
   const allLogs = [
-    ...foodLogs.map((log) => ({ ...log, logType: "food" })),
-    ...bathroomLogs.map((log) => ({ ...log, logType: "bathroom" })),
+    ...foodLogs.map(log => ({ ...log, logType: "food" })),
+    ...bathroomLogs.map(log => ({ ...log, logType: "bathroom" }))
   ].sort((a, b) => b.timestamp - a.timestamp);
 
   timelineContainer.innerHTML = "";
@@ -109,7 +140,7 @@ function updateTimeline() {
                     <div><i class="fas fa-bowl-food"></i> Food: ${log.type} - ${log.quantity}</div>
                     <div>${formatTimestamp(log.timestamp)}</div>
                 </div>
-                <button class="btn btn-edit" data-timestamp="${log.timestamp}" data-type="food">
+                <button class="btn btn-edit" data-id="${log.id}" data-type="food">
                     <i class="fas fa-edit"></i>
                 </button>
             `;
@@ -119,7 +150,7 @@ function updateTimeline() {
                     <div><i class="fas fa-toilet"></i> Bathroom: ${log.type} - ${log.location} - ${log.size} - ${log.consistency}</div>
                     <div>${formatTimestamp(log.timestamp)}</div>
                 </div>
-                <button class="btn btn-edit" data-timestamp="${log.timestamp}" data-type="bathroom">
+                <button class="btn btn-edit" data-id="${log.id}" data-type="bathroom">
                     <i class="fas fa-edit"></i>
                 </button>
             `;
@@ -130,23 +161,21 @@ function updateTimeline() {
 
   // Add event listeners to edit buttons
   document.querySelectorAll(".btn-edit").forEach((button) => {
-    button.addEventListener("click", () =>
-      openEditModal(button.dataset.timestamp, button.dataset.type),
-    );
+    button.addEventListener("click", () => openEditModal(button.dataset.id, button.dataset.type));
   });
 }
 
 // Edit functionality
-function openEditModal(timestamp, type) {
-  const log =
-    type === "food"
-      ? foodLogs.find((log) => log.timestamp === parseInt(timestamp))
-      : bathroomLogs.find((log) => log.timestamp === parseInt(timestamp));
+function openEditModal(id, type) {
+  const log = type === "food"
+    ? foodLogs.find(log => log.id == id)
+    : bathroomLogs.find(log => log.id == id);
 
   if (!log) return;
 
-  document.getElementById("edit-timestamp").value = timestamp;
+  document.getElementById("edit-timestamp").value = log.timestamp;
   document.getElementById("edit-type").value = type;
+  document.getElementById("edit-id").value = log.id;
   const editFields = document.getElementById("edit-fields");
   editFields.innerHTML = "";
 
@@ -221,7 +250,7 @@ window.addEventListener("click", (e) => {
 editForm.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const timestamp = parseInt(document.getElementById("edit-timestamp").value);
+  const id = document.getElementById("edit-id").value;
   const type = document.getElementById("edit-type").value;
 
   if (type === "food") {
@@ -230,33 +259,23 @@ editForm.addEventListener("submit", async (e) => {
     const stolen = document.getElementById("edit-food-stolen").checked;
     const location = document.getElementById("edit-food-location").value;
 
-    const index = foodLogs.findIndex((log) => log.timestamp === timestamp);
-    if (index !== -1) {
-      foodLogs[index] = {
-        type: foodType,
-        quantity: quantity,
-        stolen: stolen,
-        location: location,
-        timestamp: timestamp,
-      };
-      await saveLogs("FoodLogs", foodLogs);
-    }
+    await updateFoodLog(id, {
+      type: foodType,
+      quantity: quantity,
+      stolen: stolen,
+      location: location
+    });
+    foodLogs = await fetchFoodLogs();
   } else {
     const location = document.getElementById("edit-bathroom-location").value;
     const formData = new FormData(editForm);
-    const bathroomLog = {
+    await updateBathroomLog(id, {
       location: location,
       type: formData.get("edit-type"),
       size: formData.get("edit-size"),
-      consistency: formData.get("edit-consistency"),
-      timestamp: timestamp,
-    };
-
-    const index = bathroomLogs.findIndex((log) => log.timestamp === timestamp);
-    if (index !== -1) {
-      bathroomLogs[index] = bathroomLog;
-      await saveLogs("BathroomLogs", bathroomLogs);
-    }
+      consistency: formData.get("edit-consistency")
+    });
+    bathroomLogs = await fetchBathroomLogs();
   }
 
   editModal.style.display = "none";
@@ -265,15 +284,15 @@ editForm.addEventListener("submit", async (e) => {
 
 // Handle delete entry
 deleteEntryBtn.addEventListener("click", async () => {
-  const timestamp = parseInt(document.getElementById("edit-timestamp").value);
+  const id = document.getElementById("edit-id").value;
   const type = document.getElementById("edit-type").value;
 
   if (type === "food") {
-    foodLogs = foodLogs.filter((log) => log.timestamp !== timestamp);
-    await saveLogs("FoodLogs", foodLogs);
+    await deleteFoodLog(id);
+    foodLogs = await fetchFoodLogs();
   } else {
-    bathroomLogs = bathroomLogs.filter((log) => log.timestamp !== timestamp);
-    await saveLogs("BathroomLogs", bathroomLogs);
+    await deleteBathroomLog(id);
+    bathroomLogs = await fetchBathroomLogs();
   }
 
   editModal.style.display = "none";
@@ -289,15 +308,16 @@ foodForm.addEventListener("submit", async (e) => {
   const stolen = document.getElementById("food-stolen").checked;
   const location = foodLocationInput.value;
 
-  foodLogs.push({
+  const log = {
     type: foodType,
     quantity: quantity,
     stolen: stolen,
     location: location,
-    timestamp: Date.now(),
-  });
+    timestamp: Date.now()
+  };
 
-  await saveLogs("FoodLogs", foodLogs);
+  await addFoodLog(log);
+  foodLogs = await fetchFoodLogs();
   updateLogsDisplay();
   foodForm.reset();
 });
@@ -308,16 +328,17 @@ bathroomForm.addEventListener("submit", async (e) => {
 
   const formData = new FormData(bathroomForm);
   const location = bathroomLocationInput.value;
-  const bathroomLog = {
+
+  const log = {
     location: location,
     type: formData.get("type"),
     size: formData.get("size"),
     consistency: formData.get("consistency"),
-    timestamp: Date.now(),
+    timestamp: Date.now()
   };
 
-  bathroomLogs.push(bathroomLog);
-  await saveLogs("BathroomLogs", bathroomLogs);
+  await addBathroomLog(log);
+  bathroomLogs = await fetchBathroomLogs();
   updateLogsDisplay();
   bathroomForm.reset();
 });
@@ -326,18 +347,18 @@ bathroomForm.addEventListener("submit", async (e) => {
 exportBtn.addEventListener("click", () => {
   const format = document.getElementById("export-format").value;
   const allLogs = [
-    ...foodLogs.map((log) => ({
+    ...foodLogs.map(log => ({
       type: "Food",
       details: `${log.type} - ${log.quantity}`,
       timestamp: formatTimestamp(log.timestamp),
-      rawData: log,
+      rawData: log
     })),
-    ...bathroomLogs.map((log) => ({
+    ...bathroomLogs.map(log => ({
       type: "Bathroom",
       details: `${log.type} - ${log.location} - ${log.size} - ${log.consistency}`,
       timestamp: formatTimestamp(log.timestamp),
-      rawData: log,
-    })),
+      rawData: log
+    }))
   ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
   let content, mimeType, extension;
@@ -345,22 +366,16 @@ exportBtn.addEventListener("click", () => {
   if (format === "csv") {
     content = [
       ["Type", "Details", "Timestamp"],
-      ...allLogs.map((log) => [log.type, log.details, log.timestamp]),
-    ]
-      .map((row) => row.join(","))
-      .join("\n");
+      ...allLogs.map(log => [log.type, log.details, log.timestamp])
+    ].map(row => row.join(",")).join("\n");
     mimeType = "text/csv;charset=utf-8;";
     extension = "csv";
   } else {
-    content = JSON.stringify(
-      {
-        foodLogs: foodLogs,
-        bathroomLogs: bathroomLogs,
-        exportDate: new Date().toISOString(),
-      },
-      null,
-      2,
-    );
+    content = JSON.stringify({
+      foodLogs: foodLogs,
+      bathroomLogs: bathroomLogs,
+      exportDate: new Date().toISOString()
+    }, null, 2);
     mimeType = "application/json";
     extension = "json";
   }
@@ -384,45 +399,19 @@ importFileInput.addEventListener("change", async (e) => {
       if (file.name.endsWith(".json")) {
         importedData = JSON.parse(event.target.result);
         if (importedData.foodLogs && importedData.bathroomLogs) {
-          foodLogs = importedData.foodLogs;
-          bathroomLogs = importedData.bathroomLogs;
+          // Clear and re-insert logs
+          for (const log of importedData.foodLogs) await addFoodLog(log);
+          for (const log of importedData.bathroomLogs) await addBathroomLog(log);
+          foodLogs = await fetchFoodLogs();
+          bathroomLogs = await fetchBathroomLogs();
         } else {
           alert("Invalid JSON format.");
           return;
         }
-      } else if (file.name.endsWith(".csv")) {
-        // Simple CSV import (assumes same export format)
-        const lines = event.target.result.split("\n").slice(1); // skip header
-        foodLogs = [];
-        bathroomLogs = [];
-        lines.forEach((line) => {
-          const [type, details, timestamp] = line.split(",");
-          if (type === "Food") {
-            const [foodType, quantity] = details.split(" - ");
-            foodLogs.push({
-              type: foodType,
-              quantity: quantity,
-              stolen: false,
-              timestamp: new Date(timestamp).getTime(),
-            });
-          } else if (type === "Bathroom") {
-            const [bathType, location, size, consistency] =
-              details.split(" - ");
-            bathroomLogs.push({
-              type: bathType,
-              location: location,
-              size: size,
-              consistency: consistency,
-              timestamp: new Date(timestamp).getTime(),
-            });
-          }
-        });
       } else {
-        alert("Unsupported file type.");
+        alert("Only JSON import is supported with Supabase.");
         return;
       }
-      await saveLogs("FoodLogs", foodLogs);
-      await saveLogs("BathroomLogs", bathroomLogs);
       updateLogsDisplay();
       alert("Logs imported successfully!");
     } catch (err) {
@@ -460,27 +449,11 @@ bathroomUseLocationBtn.addEventListener("click", () =>
 // Initial display update
 updateLogsDisplay();
 
-// --- Google Sheets API functions ---
-
-async function fetchLogs(sheet) {
-  const res = await fetch(`${API_URL}?sheet=${sheet}`);
-  const data = await res.json();
-  return data.error ? [] : data;
-}
-
-async function saveLogs(sheet, logs) {
-  await fetch(`${API_URL}?sheet=${sheet}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(logs),
-  });
-}
-
 // --- Initial load ---
 
 async function initializeLogs() {
-  foodLogs = await fetchLogs("FoodLogs");
-  bathroomLogs = await fetchLogs("BathroomLogs");
+  foodLogs = await fetchFoodLogs();
+  bathroomLogs = await fetchBathroomLogs();
   updateLogsDisplay();
 }
 
