@@ -9,9 +9,9 @@
   },
   "scripts": {
     "start": "npx serve",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
+    "test": "jest --config jest.config.cjs",
+    "test:watch": "jest --watch --config jest.config.cjs",
+    "test:coverage": "jest --coverage --config jest.config.cjs",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run",
     "build": "mkdir -p dist && cp -r index.html styles.css app.js dist/ && cp -r molly.png dist/",
