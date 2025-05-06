@@ -659,6 +659,25 @@ input[type="text"]:focus {
   min-width: 200px;
 }
 
+.bathroom-options,
+.food-options {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 5px;
+  transition: all 0.3s ease;
+}
+
+.bathroom-options select,
+.food-options select {
+  flex: 1;
+  min-width: 120px;
+}
+
 .favorite-field .remove-favorite {
   padding: 0.8rem;
   background-color: var(--error-color);
@@ -667,10 +686,6 @@ input[type="text"]:focus {
   border-radius: 5px;
   cursor: pointer;
   transition: background-color 0.2s;
-}
-
-.favorite-field .remove-favorite:hover {
-  background-color: #c0392b;
 }
 
 .success-message {
