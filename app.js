@@ -479,6 +479,11 @@ function initializeDOMHandlers() {
     const inputs = favoritesFields.querySelectorAll("input[type='text']");
     const newFavorites = Array.from(inputs).map((input) => ({
       name: input.value.trim(),
+      label: input.value.trim(),
+      type: "pee",
+      location: "outside",
+      size: "small",
+      consistency: "normal"
     }));
 
     console.log("New favorites to save:", newFavorites);
