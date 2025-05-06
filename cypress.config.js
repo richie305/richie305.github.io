@@ -1,4 +1,5 @@
 import { defineConfig } from "cypress";
+import installLogsPrinter from "cypress-terminal-report/src/installLogsPrinter";
 
 export default defineConfig({
   e2e: {
@@ -8,6 +9,7 @@ export default defineConfig({
     video: false,
     screenshotOnRunFailure: true,
     setupNodeEvents(on, config) {
+      installLogsPrinter(on);
       // implement node event listeners here
     },
   },
