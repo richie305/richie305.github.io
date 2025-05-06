@@ -15,6 +15,37 @@
     />
   </head>
   <body>
+    <nav class="navbar">
+      <div class="logo">
+        Pawsitive Insights
+        <span
+          aria-label="sparkle"
+          title="sparkle"
+          style="font-size: 1.5rem; vertical-align: middle"
+          >✨</span
+        >
+      </div>
+      <div class="nav-actions">
+        <button
+          class="nav-btn"
+          onclick="document.getElementById('timeline').scrollIntoView({behavior: 'smooth'})"
+        >
+          Timeline
+        </button>
+        <button
+          class="nav-btn"
+          onclick="document.querySelector('.export-section').scrollIntoView({behavior: 'smooth'})"
+        >
+          Export
+        </button>
+        <button
+          class="nav-btn"
+          onclick="document.querySelector('.favorites-section').scrollIntoView({behavior: 'smooth'})"
+        >
+          Favorites
+        </button>
+      </div>
+    </nav>
     <div class="container">
       <div class="favorites-section">
         <h2><i class="fas fa-star"></i> Favorites</h2>
@@ -23,10 +54,11 @@
           <i class="fas fa-edit"></i> Edit Favorites
         </button>
       </div>
-      <header>
+      <header style="display: none"></header>
+      <main>
         <div class="profile-section">
           <div class="photo-container">
-            <img id="dog-photo" src="molly.png" alt="Molly's Photo" />
+            <img id="dog-photo" src="molly.png" alt="Your Dog's Photo" />
             <div class="photo-overlay">
               <label for="photo-upload" class="upload-btn">
                 <i class="fas fa-camera"></i>
@@ -39,16 +71,27 @@
               />
             </div>
           </div>
-          <div class="header-text">
-            <h1>Molly's Tracker</h1>
-            <p class="subtitle">
-              Track your red standard poodle's daily activities
+          <div
+            class="header-text"
+            style="text-align: center; margin-bottom: 2rem"
+          >
+            <h2
+              style="
+                font-size: 2rem;
+                color: var(--primary-color);
+                font-weight: 700;
+              "
+            >
+              Welcome to Pawsitive Insights
+            </h2>
+            <p
+              class="subtitle"
+              style="color: var(--secondary-color); font-size: 1.1rem"
+            >
+              Track your dog's daily activities and unlock actionable insights
             </p>
           </div>
         </div>
-      </header>
-
-      <main>
         <div class="tracking-sections-container">
           <section class="tracking-section" id="food-tracking">
             <h2><i class="fas fa-bowl-food"></i> Food Tracking</h2>
