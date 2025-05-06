@@ -500,16 +500,22 @@ function initializeDOMHandlers() {
     const newFavorites = Array.from(favoriteFields).map((field) => {
       const name = field.querySelector("input[type='text']").value.trim();
       const type = field.querySelector(".favorite-type").value;
-      const location = field.querySelector(".favorite-location").value;
-      const size = field.querySelector(".favorite-size").value;
-      const consistency = field.querySelector(".favorite-consistency").value;
-
+      let location = "";
+      let size = "";
+      let consistency = "";
+      if (type === "bathroom") {
+        location = field.querySelector(".favorite-location-bathroom").value;
+        size = field.querySelector(".favorite-size").value;
+        consistency = field.querySelector(".favorite-consistency").value;
+      } else if (type === "food") {
+        location = field.querySelector(".favorite-location-food").value;
+      }
       return {
         name,
         type,
         location,
-        size,
-        consistency,
+        size: type === "bathroom" ? size : undefined,
+        consistency: type === "bathroom" ? consistency : undefined,
       };
     });
 
@@ -554,6 +560,43 @@ function initializeDOMHandlers() {
       console.log("Remove favorite button clicked");
       e.target.closest(".favorite-field").remove();
     }
+  });
+
+  // Add event listeners for type selection
+  document.querySelectorAll(".favorite-type").forEach((select) => {
+    select.addEventListener("change", (e) => {
+      const field = e.target.closest(".favorite-field");
+      const bathroomOptions = field.querySelector(".bathroom-options");
+      const foodOptions = field.querySelector(".food-options");
+      const bathroomLocation = field.querySelector(
+        ".favorite-location-bathroom",
+      );
+      const bathroomSize = field.querySelector(".favorite-size");
+      const bathroomConsistency = field.querySelector(".favorite-consistency");
+      const foodLocation = field.querySelector(".favorite-location-food");
+      if (e.target.value === "bathroom") {
+        bathroomOptions.style.display = "flex";
+        foodOptions.style.display = "none";
+        bathroomLocation.disabled = false;
+        bathroomSize.disabled = false;
+        bathroomConsistency.disabled = false;
+        foodLocation.disabled = true;
+      } else if (e.target.value === "food") {
+        bathroomOptions.style.display = "none";
+        foodOptions.style.display = "flex";
+        bathroomLocation.disabled = true;
+        bathroomSize.disabled = true;
+        bathroomConsistency.disabled = true;
+        foodLocation.disabled = false;
+      } else {
+        bathroomOptions.style.display = "none";
+        foodOptions.style.display = "none";
+        bathroomLocation.disabled = true;
+        bathroomSize.disabled = true;
+        bathroomConsistency.disabled = true;
+        foodLocation.disabled = true;
+      }
+    });
   });
 
   // Initial display update
@@ -863,23 +906,32 @@ function renderFavoritesForm() {
       <div class="favorite-inputs">
         <input type="text" placeholder="Favorite name" required>
         <select class="favorite-type">
+          <option value="">Select Type</option>
           <option value="bathroom">Bathroom</option>
           <option value="food">Food</option>
         </select>
-        <select class="favorite-location">
-          <option value="outside">Outside</option>
-          <option value="inside">Inside</option>
-        </select>
-        <select class="favorite-size">
-          <option value="small">Small</option>
-          <option value="medium">Medium</option>
-          <option value="large">Large</option>
-        </select>
-        <select class="favorite-consistency">
-          <option value="normal">Normal</option>
-          <option value="soft">Soft</option>
-          <option value="hard">Hard</option>
-        </select>
+        <div class="bathroom-options" style="display: none;">
+          <select class="favorite-location-bathroom" disabled>
+            <option value="outside">Outside</option>
+            <option value="inside">Inside</option>
+          </select>
+          <select class="favorite-size" disabled>
+            <option value="small">Small</option>
+            <option value="medium">Medium</option>
+            <option value="large">Large</option>
+          </select>
+          <select class="favorite-consistency" disabled>
+            <option value="normal">Normal</option>
+            <option value="soft">Soft</option>
+            <option value="hard">Hard</option>
+          </select>
+        </div>
+        <div class="food-options" style="display: none;">
+          <select class="favorite-location-food" disabled>
+            <option value="outside">Outside</option>
+            <option value="inside">Inside</option>
+          </select>
+        </div>
       </div>
       <button type="button" class="btn btn-delete remove-favorite">
         <i class="fas fa-trash"></i>
@@ -897,29 +949,75 @@ function renderFavoritesForm() {
       <div class="favorite-inputs">
         <input type="text" value="${favorite.name || favorite.label}" required>
         <select class="favorite-type">
+          <option value="">Select Type</option>
           <option value="bathroom" ${favorite.type === "bathroom" ? "selected" : ""}>Bathroom</option>
           <option value="food" ${favorite.type === "food" ? "selected" : ""}>Food</option>
         </select>
-        <select class="favorite-location">
-          <option value="outside" ${favorite.location === "outside" ? "selected" : ""}>Outside</option>
-          <option value="inside" ${favorite.location === "inside" ? "selected" : ""}>Inside</option>
-        </select>
-        <select class="favorite-size">
-          <option value="small" ${favorite.size === "small" ? "selected" : ""}>Small</option>
-          <option value="medium" ${favorite.size === "medium" ? "selected" : ""}>Medium</option>
-          <option value="large" ${favorite.size === "large" ? "selected" : ""}>Large</option>
-        </select>
-        <select class="favorite-consistency">
-          <option value="normal" ${favorite.consistency === "normal" ? "selected" : ""}>Normal</option>
-          <option value="soft" ${favorite.consistency === "soft" ? "selected" : ""}>Soft</option>
-          <option value="hard" ${favorite.consistency === "hard" ? "selected" : ""}>Hard</option>
-        </select>
+        <div class="bathroom-options" style="display: ${favorite.type === "bathroom" ? "flex" : "none"}">
+          <select class="favorite-location-bathroom" ${favorite.type === "bathroom" ? "" : "disabled"}>
+            <option value="outside" ${favorite.location === "outside" ? "selected" : ""}>Outside</option>
+            <option value="inside" ${favorite.location === "inside" ? "selected" : ""}>Inside</option>
+          </select>
+          <select class="favorite-size" ${favorite.type === "bathroom" ? "" : "disabled"}>
+            <option value="small" ${favorite.size === "small" ? "selected" : ""}>Small</option>
+            <option value="medium" ${favorite.size === "medium" ? "selected" : ""}>Medium</option>
+            <option value="large" ${favorite.size === "large" ? "selected" : ""}>Large</option>
+          </select>
+          <select class="favorite-consistency" ${favorite.type === "bathroom" ? "" : "disabled"}>
+            <option value="normal" ${favorite.consistency === "normal" ? "selected" : ""}>Normal</option>
+            <option value="soft" ${favorite.consistency === "soft" ? "selected" : ""}>Soft</option>
+            <option value="hard" ${favorite.consistency === "hard" ? "selected" : ""}>Hard</option>
+          </select>
+        </div>
+        <div class="food-options" style="display: ${favorite.type === "food" ? "flex" : "none"}">
+          <select class="favorite-location-food" ${favorite.type === "food" ? "" : "disabled"}>
+            <option value="outside" ${favorite.location === "outside" ? "selected" : ""}>Outside</option>
+            <option value="inside" ${favorite.location === "inside" ? "selected" : ""}>Inside</option>
+          </select>
+        </div>
       </div>
       <button type="button" class="btn btn-delete remove-favorite">
         <i class="fas fa-trash"></i>
       </button>
     `;
     favoritesFields.appendChild(favoriteField);
+  });
+
+  // Add event listeners for type selection
+  document.querySelectorAll(".favorite-type").forEach((select) => {
+    select.addEventListener("change", (e) => {
+      const field = e.target.closest(".favorite-field");
+      const bathroomOptions = field.querySelector(".bathroom-options");
+      const foodOptions = field.querySelector(".food-options");
+      const bathroomLocation = field.querySelector(
+        ".favorite-location-bathroom",
+      );
+      const bathroomSize = field.querySelector(".favorite-size");
+      const bathroomConsistency = field.querySelector(".favorite-consistency");
+      const foodLocation = field.querySelector(".favorite-location-food");
+      if (e.target.value === "bathroom") {
+        bathroomOptions.style.display = "flex";
+        foodOptions.style.display = "none";
+        bathroomLocation.disabled = false;
+        bathroomSize.disabled = false;
+        bathroomConsistency.disabled = false;
+        foodLocation.disabled = true;
+      } else if (e.target.value === "food") {
+        bathroomOptions.style.display = "none";
+        foodOptions.style.display = "flex";
+        bathroomLocation.disabled = true;
+        bathroomSize.disabled = true;
+        bathroomConsistency.disabled = true;
+        foodLocation.disabled = false;
+      } else {
+        bathroomOptions.style.display = "none";
+        foodOptions.style.display = "none";
+        bathroomLocation.disabled = true;
+        bathroomSize.disabled = true;
+        bathroomConsistency.disabled = true;
+        foodLocation.disabled = true;
+      }
+    });
   });
 }
 
