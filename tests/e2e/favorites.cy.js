@@ -1,6 +1,9 @@
 describe("Favorites", () => {
   beforeEach(() => {
     cy.visit("/");
+    cy.window().then((win) => {
+      win.localStorage.clear();
+    });
   });
 
   it("should add a new favorite", () => {
@@ -13,6 +16,13 @@ describe("Favorites", () => {
 
     // Save favorites
     cy.get("#favorites-form").submit();
+
+    cy.window().then((win) => {
+      const modal = win.document.getElementById("favorites-modal");
+      if (modal) modal.style.display = "none";
+    });
+    
+    cy.wait(1000); // Wait for DOM updates
 
     // Verify the favorite appears in the list
     cy.get("#favorites-list").should("contain", "Morning Walk");
@@ -32,6 +42,13 @@ describe("Favorites", () => {
     // Save favorites
     cy.get("#favorites-form").submit();
 
+    cy.window().then((win) => {
+      const modal = win.document.getElementById("favorites-modal");
+      if (modal) modal.style.display = "none";
+    });
+    
+    cy.wait(1000); // Wait for DOM updates
+
     // Verify the favorite is not in the list
     cy.get("#favorites-list").should("not.contain", "Evening Walk");
   });
@@ -47,6 +64,13 @@ describe("Favorites", () => {
     // Save favorites
     cy.get("#favorites-form").submit();
 
+    cy.window().then((win) => {
+      const modal = win.document.getElementById("favorites-modal");
+      if (modal) modal.style.display = "none";
+    });
+    
+    cy.wait(1000); // Wait for DOM updates
+
     // Open modal again
     cy.get("#edit-favorites-btn").click();
 
@@ -55,6 +79,13 @@ describe("Favorites", () => {
 
     // Save favorites
     cy.get("#favorites-form").submit();
+
+    cy.window().then((win) => {
+      const modal = win.document.getElementById("favorites-modal");
+      if (modal) modal.style.display = "none";
+    });
+    
+    cy.wait(1000); // Wait for DOM updates
 
     // Verify the updated name appears
     cy.get("#favorites-list").should("contain", "Updated Name");

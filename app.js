@@ -479,6 +479,11 @@ function initializeDOMHandlers() {
     const inputs = favoritesFields.querySelectorAll("input[type='text']");
     const newFavorites = Array.from(inputs).map((input) => ({
       name: input.value.trim(),
+      label: input.value.trim(),
+      type: "pee",
+      location: "outside",
+      size: "small",
+      consistency: "normal"
     }));
 
     console.log("New favorites to save:", newFavorites);
@@ -597,6 +602,9 @@ function updateTimeline() {
     ...bathroomLogs.map((log) => ({ ...log, logType: "bathroom" })),
   ].sort((a, b) => b.timestamp - a.timestamp);
 
+  const timelineContainer = document.getElementById("timeline");
+  if (!timelineContainer) return;
+  
   timelineContainer.innerHTML = "";
   allLogs.forEach((log) => {
     const entry = document.createElement("div");
@@ -807,12 +815,25 @@ function renderFavoritesForm() {
   favoritesFields.innerHTML = "";
   console.log("Rendering form for", favorites.length, "favorites");
 
+  if (favorites.length === 0) {
+    const favoriteField = document.createElement("div");
+    favoriteField.className = "favorite-field";
+    favoriteField.innerHTML = `
+      <input type="text" placeholder="Favorite name" required>
+      <button type="button" class="btn btn-delete remove-favorite">
+        <i class="fas fa-trash"></i>
+      </button>
+    `;
+    favoritesFields.appendChild(favoriteField);
+    return;
+  }
+
   favorites.forEach((favorite) => {
     console.log("Rendering form field for favorite:", favorite);
     const favoriteField = document.createElement("div");
     favoriteField.className = "favorite-field";
     favoriteField.innerHTML = `
-      <input type="text" value="${favorite.name}" required>
+      <input type="text" value="${favorite.name || favorite.label}" required>
       <button type="button" class="btn btn-delete remove-favorite">
         <i class="fas fa-trash"></i>
       </button>
@@ -832,19 +853,21 @@ function capitalize(str) {
 }
 
 // Export functions for testing
-export {
-  fetchFoodLogs,
-  fetchBathroomLogs,
-  addFoodLog,
-  addBathroomLog,
-  updateFoodLog,
-  updateBathroomLog,
-  deleteFoodLog,
-  deleteBathroomLog,
-  fetchFavorites,
-  addFavorite,
-  updateFavorite,
-  deleteFavorite,
-  formatTimestamp,
-  capitalize,
-};
+if (typeof exports !== 'undefined') {
+  Object.assign(exports, {
+    fetchFoodLogs,
+    fetchBathroomLogs,
+    addFoodLog,
+    addBathroomLog,
+    updateFoodLog,
+    updateBathroomLog,
+    deleteFoodLog,
+    deleteBathroomLog,
+    fetchFavorites,
+    addFavorite,
+    updateFavorite,
+    deleteFavorite,
+    formatTimestamp,
+    capitalize,
+  });
+}
