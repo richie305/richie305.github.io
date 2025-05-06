@@ -3,6 +3,9 @@
  * favorites management, and data persistence using Supabase.
  */
 
+import * as Sentry from "@sentry/browser";
+Sentry.init({ dsn: "YOUR_SENTRY_DSN" });
+
 // --- Supabase Data Functions ---
 
 /**
