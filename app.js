@@ -815,12 +815,25 @@ function renderFavoritesForm() {
   favoritesFields.innerHTML = "";
   console.log("Rendering form for", favorites.length, "favorites");
 
+  if (favorites.length === 0) {
+    const favoriteField = document.createElement("div");
+    favoriteField.className = "favorite-field";
+    favoriteField.innerHTML = `
+      <input type="text" placeholder="Favorite name" required>
+      <button type="button" class="btn btn-delete remove-favorite">
+        <i class="fas fa-trash"></i>
+      </button>
+    `;
+    favoritesFields.appendChild(favoriteField);
+    return;
+  }
+
   favorites.forEach((favorite) => {
     console.log("Rendering form field for favorite:", favorite);
     const favoriteField = document.createElement("div");
     favoriteField.className = "favorite-field";
     favoriteField.innerHTML = `
-      <input type="text" value="${favorite.name}" required>
+      <input type="text" value="${favorite.name || favorite.label}" required>
       <button type="button" class="btn btn-delete remove-favorite">
         <i class="fas fa-trash"></i>
       </button>
