@@ -597,6 +597,9 @@ function updateTimeline() {
     ...bathroomLogs.map((log) => ({ ...log, logType: "bathroom" })),
   ].sort((a, b) => b.timestamp - a.timestamp);
 
+  const timelineContainer = document.getElementById("timeline");
+  if (!timelineContainer) return;
+  
   timelineContainer.innerHTML = "";
   allLogs.forEach((log) => {
     const entry = document.createElement("div");
@@ -832,19 +835,21 @@ function capitalize(str) {
 }
 
 // Export functions for testing
-export {
-  fetchFoodLogs,
-  fetchBathroomLogs,
-  addFoodLog,
-  addBathroomLog,
-  updateFoodLog,
-  updateBathroomLog,
-  deleteFoodLog,
-  deleteBathroomLog,
-  fetchFavorites,
-  addFavorite,
-  updateFavorite,
-  deleteFavorite,
-  formatTimestamp,
-  capitalize,
-};
+if (typeof exports !== 'undefined') {
+  Object.assign(exports, {
+    fetchFoodLogs,
+    fetchBathroomLogs,
+    addFoodLog,
+    addBathroomLog,
+    updateFoodLog,
+    updateBathroomLog,
+    deleteFoodLog,
+    deleteBathroomLog,
+    fetchFavorites,
+    addFavorite,
+    updateFavorite,
+    deleteFavorite,
+    formatTimestamp,
+    capitalize,
+  });
+}
