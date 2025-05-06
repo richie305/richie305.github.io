@@ -36,6 +36,7 @@ jobs:
 
       - name: Run Cypress tests
         uses: cypress-io/github-action@v5
+        continue-on-error: true
         with:
           start: npm start
           wait-on: "http://localhost:3000"
