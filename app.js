@@ -464,7 +464,27 @@ function initializeDOMHandlers() {
     const favoriteField = document.createElement("div");
     favoriteField.className = "favorite-field";
     favoriteField.innerHTML = `
-      <input type="text" placeholder="Favorite name" required>
+      <div class="favorite-inputs">
+        <input type="text" placeholder="Favorite name" required>
+        <select class="favorite-type">
+          <option value="bathroom">Bathroom</option>
+          <option value="food">Food</option>
+        </select>
+        <select class="favorite-location">
+          <option value="outside">Outside</option>
+          <option value="inside">Inside</option>
+        </select>
+        <select class="favorite-size">
+          <option value="small">Small</option>
+          <option value="medium">Medium</option>
+          <option value="large">Large</option>
+        </select>
+        <select class="favorite-consistency">
+          <option value="normal">Normal</option>
+          <option value="soft">Soft</option>
+          <option value="hard">Hard</option>
+        </select>
+      </div>
       <button type="button" class="btn btn-delete remove-favorite">
         <i class="fas fa-trash"></i>
       </button>
@@ -476,15 +496,22 @@ function initializeDOMHandlers() {
     e.preventDefault();
     console.log("Favorites form submitted");
 
-    const inputs = favoritesFields.querySelectorAll("input[type='text']");
-    const newFavorites = Array.from(inputs).map((input) => ({
-      name: input.value.trim(),
-      label: input.value.trim(),
-      type: "pee",
-      location: "outside",
-      size: "small",
-      consistency: "normal"
-    }));
+    const favoriteFields = favoritesFields.querySelectorAll(".favorite-field");
+    const newFavorites = Array.from(favoriteFields).map((field) => {
+      const name = field.querySelector("input[type='text']").value.trim();
+      const type = field.querySelector(".favorite-type").value;
+      const location = field.querySelector(".favorite-location").value;
+      const size = field.querySelector(".favorite-size").value;
+      const consistency = field.querySelector(".favorite-consistency").value;
+
+      return {
+        name,
+        type,
+        location,
+        size,
+        consistency,
+      };
+    });
 
     console.log("New favorites to save:", newFavorites);
 
@@ -506,6 +533,14 @@ function initializeDOMHandlers() {
       await loadFavorites();
       renderFavorites();
       favoritesModal.style.display = "none";
+
+      // Show success message
+      const successMessage = document.createElement("div");
+      successMessage.className = "success-message";
+      successMessage.textContent = "Favorites updated successfully!";
+      document.body.appendChild(successMessage);
+      setTimeout(() => successMessage.remove(), 3000);
+
       console.log("Favorites updated successfully");
     } catch (error) {
       console.error("Error updating favorites:", error);
@@ -604,7 +639,7 @@ function updateTimeline() {
 
   const timelineContainer = document.getElementById("timeline");
   if (!timelineContainer) return;
-  
+
   timelineContainer.innerHTML = "";
   allLogs.forEach((log) => {
     const entry = document.createElement("div");
@@ -776,26 +811,32 @@ function renderFavorites() {
   list.innerHTML = "";
   console.log("Rendering", favorites.length, "favorites");
 
-  favorites.forEach((fav, idx) => {
+  favorites.forEach((fav) => {
     console.log("Rendering favorite:", fav);
     const btn = document.createElement("button");
     btn.className = "favorite-btn";
-    btn.innerHTML = `<i class="fas fa-star"></i> ${fav.label}`;
+    btn.innerHTML = `<i class="fas fa-star"></i> ${fav.name}`;
     btn.onclick = () => {
       console.log("Favorite clicked:", fav);
-      // Fill bathroom form with favorite config
-      document.querySelector(
-        `#bathroom-form input[name="type"][value="${fav.type}"]`,
-      ).checked = true;
-      document.querySelector(
-        `#bathroom-form input[name="location"][value="${fav.location}"]`,
-      ).checked = true;
-      document.querySelector(
-        `#bathroom-form input[name="size"][value="${fav.size}"]`,
-      ).checked = true;
-      document.querySelector(
-        `#bathroom-form input[name="consistency"][value="${fav.consistency}"]`,
-      ).checked = true;
+      if (fav.type === "bathroom") {
+        // Fill bathroom form with favorite config
+        document.querySelector(
+          `#bathroom-form input[name="type"][value="${fav.type}"]`,
+        ).checked = true;
+        document.querySelector(
+          `#bathroom-form input[name="location"][value="${fav.location}"]`,
+        ).checked = true;
+        document.querySelector(
+          `#bathroom-form input[name="size"][value="${fav.size}"]`,
+        ).checked = true;
+        document.querySelector(
+          `#bathroom-form input[name="consistency"][value="${fav.consistency}"]`,
+        ).checked = true;
+      } else if (fav.type === "food") {
+        // Fill food form with favorite config
+        document.getElementById("food-type").value = fav.name;
+        document.getElementById("food-location").value = fav.location;
+      }
     };
     list.appendChild(btn);
   });
@@ -819,7 +860,27 @@ function renderFavoritesForm() {
     const favoriteField = document.createElement("div");
     favoriteField.className = "favorite-field";
     favoriteField.innerHTML = `
-      <input type="text" placeholder="Favorite name" required>
+      <div class="favorite-inputs">
+        <input type="text" placeholder="Favorite name" required>
+        <select class="favorite-type">
+          <option value="bathroom">Bathroom</option>
+          <option value="food">Food</option>
+        </select>
+        <select class="favorite-location">
+          <option value="outside">Outside</option>
+          <option value="inside">Inside</option>
+        </select>
+        <select class="favorite-size">
+          <option value="small">Small</option>
+          <option value="medium">Medium</option>
+          <option value="large">Large</option>
+        </select>
+        <select class="favorite-consistency">
+          <option value="normal">Normal</option>
+          <option value="soft">Soft</option>
+          <option value="hard">Hard</option>
+        </select>
+      </div>
       <button type="button" class="btn btn-delete remove-favorite">
         <i class="fas fa-trash"></i>
       </button>
@@ -833,7 +894,27 @@ function renderFavoritesForm() {
     const favoriteField = document.createElement("div");
     favoriteField.className = "favorite-field";
     favoriteField.innerHTML = `
-      <input type="text" value="${favorite.name || favorite.label}" required>
+      <div class="favorite-inputs">
+        <input type="text" value="${favorite.name || favorite.label}" required>
+        <select class="favorite-type">
+          <option value="bathroom" ${favorite.type === "bathroom" ? "selected" : ""}>Bathroom</option>
+          <option value="food" ${favorite.type === "food" ? "selected" : ""}>Food</option>
+        </select>
+        <select class="favorite-location">
+          <option value="outside" ${favorite.location === "outside" ? "selected" : ""}>Outside</option>
+          <option value="inside" ${favorite.location === "inside" ? "selected" : ""}>Inside</option>
+        </select>
+        <select class="favorite-size">
+          <option value="small" ${favorite.size === "small" ? "selected" : ""}>Small</option>
+          <option value="medium" ${favorite.size === "medium" ? "selected" : ""}>Medium</option>
+          <option value="large" ${favorite.size === "large" ? "selected" : ""}>Large</option>
+        </select>
+        <select class="favorite-consistency">
+          <option value="normal" ${favorite.consistency === "normal" ? "selected" : ""}>Normal</option>
+          <option value="soft" ${favorite.consistency === "soft" ? "selected" : ""}>Soft</option>
+          <option value="hard" ${favorite.consistency === "hard" ? "selected" : ""}>Hard</option>
+        </select>
+      </div>
       <button type="button" class="btn btn-delete remove-favorite">
         <i class="fas fa-trash"></i>
       </button>
@@ -853,7 +934,7 @@ function capitalize(str) {
 }
 
 // Export functions for testing
-if (typeof exports !== 'undefined') {
+if (typeof exports !== "undefined") {
   Object.assign(exports, {
     fetchFoodLogs,
     fetchBathroomLogs,
